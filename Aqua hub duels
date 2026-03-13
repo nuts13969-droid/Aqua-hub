@@ -1,0 +1,168 @@
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+-- GET HUMANOID
+local function getHumanoid()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:WaitForChild("Humanoid")
+end
+
+-- GET ROOT
+local function getRoot()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:WaitForChild("HumanoidRootPart")
+end
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "AquaHubMini"
+gui.Parent = CoreGui
+gui.ResetOnSpawn = false
+
+-- MOBILE DRAG
+local function makeDraggable(frame)
+
+    local dragging = false
+    local dragInput, startPos, startFramePos
+
+    local function update(input)
+        local delta = input.Position - startPos
+        frame.Position = UDim2.new(
+            0,
+            startFramePos.X.Offset + delta.X,
+            0,
+            startFramePos.Y.Offset + delta.Y
+        )
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+            dragging = true
+            dragInput = input
+            startPos = input.Position
+            startFramePos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function()
+        if dragging and dragInput then
+            update(dragInput)
+        end
+    end)
+end
+
+-- BUTTON CREATOR
+local function createButton(name,x,y,callback)
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0,100,0,35)
+    btn.Position = UDim2.new(0,x,0,y)
+    btn.Text = name
+
+    btn.BackgroundColor3 = Color3.fromRGB(0,170,255)
+    btn.BackgroundTransparency = 0.45
+
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    btn.Parent = gui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,10)
+    corner.Parent = btn
+
+    makeDraggable(btn)
+
+    btn.MouseButton1Click:Connect(callback)
+
+end
+
+-- SPEED
+createButton("Speed",100,200,function()
+    local hum = getHumanoid()
+    hum.WalkSpeed = 50
+end)
+
+-- JUMP
+createButton("Jump",220,200,function()
+    local hum = getHumanoid()
+    hum.JumpPower = 120
+    hum.UseJumpPower = true
+end)
+
+-- SLOW FALL
+local slowFall = false
+
+createButton("SlowFall",340,200,function()
+    slowFall = not slowFall
+end)
+
+RunService.RenderStepped:Connect(function()
+    if slowFall then
+        local root = getRoot()
+        root.AssemblyLinearVelocity = Vector3.new(
+            root.AssemblyLinearVelocity.X,
+            -5,
+            root.AssemblyLinearVelocity.Z
+        )
+    end
+end)
+
+-- TAUNT
+createButton("Taunt",460,200,function()
+
+    local char = player.Character or player.CharacterAdded:Wait()
+    local head = char:WaitForChild("Head")
+
+    game:GetService("Chat"):Chat(head,"aqua hub on top",Enum.ChatColor.Blue)
+
+end)
+
+-- RESET BUTTON
+createButton("Reset",580,200,function()
+
+    local hum = getHumanoid()
+    hum.Health = 0
+
+end)
+
+-- ANTI FLING
+local antiFling = false
+
+createButton("AntiFling",700,200,function()
+    antiFling = not antiFling
+end)
+
+RunService.RenderStepped:Connect(function()
+
+    if antiFling then
+        local root = getRoot()
+
+        if root.AssemblyAngularVelocity.Magnitude > 100 then
+            root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+        end
+
+        if root.AssemblyLinearVelocity.Magnitude > 100 then
+            root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        end
+    end
+
+end)
